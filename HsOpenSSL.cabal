@@ -61,6 +61,12 @@ Flag macports-openssl
     Default:
         False
 
+Flag windows-openssl
+  Description:
+      Use Windows OpenSSL
+  Default:
+      True
+
 flag old-locale
   description: If true, use old-locale, otherwise use time 1.5 or newer.
   manual:      False
@@ -102,6 +108,14 @@ Library
         Include-Dirs: /opt/local/include
         Extra-Lib-Dirs: /opt/local/lib
 
+    if flag(windows-openssl) && arch(i386)
+        Include-Dirs: D:\Programs\OpenSSL-Win32-1-1-0\include
+        Extra-Lib-Dirs: D:\Programs\OpenSSL-Win32-1-1-0\lib
+    if flag(windows-openssl) && arch(x86_64)
+        Include-Dirs: "C:\\Program Files\\OpenSSL-Win64\\include"
+        Extra-Lib-Dirs: "C:\\Program Files\\OpenSSL-Win64\\lib"
+        Extra-Lib-Dirs: "C:\\Program Files\\OpenSSL-Win64\\bin"
+
     if os(mingw32)
         if arch(x86_64)
             Extra-Libraries: libcrypto libssl
@@ -111,7 +125,7 @@ Library
 
         C-Sources:       cbits/mutex-win.c
         CC-Options:      -D MINGW32 -DNOCRYPT
-        CPP-Options:     -DCALLCONV=stdcall
+        CPP-Options:     -DCALLCONV=ccall
     else
         Extra-Libraries: ssl crypto
         C-Sources:       cbits/mutex-pthread.c
