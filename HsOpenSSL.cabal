@@ -61,7 +61,7 @@ Flag macports-openssl
     Default:
         False
 
-Flag windows-openssl
+Flag tsfactory-openssl
   Description:
       Use Windows OpenSSL
   Default:
@@ -108,24 +108,24 @@ Library
         Include-Dirs: /opt/local/include
         Extra-Lib-Dirs: /opt/local/lib
 
-    if flag(windows-openssl) && arch(i386)
-        Include-Dirs: D:\Programs\OpenSSL-Win32-1-1-0\include
-        Extra-Lib-Dirs: D:\Programs\OpenSSL-Win32-1-1-0\lib
-    if flag(windows-openssl) && arch(x86_64)
-        Include-Dirs: "C:\\Program Files\\OpenSSL-Win64\\include"
-        Extra-Lib-Dirs: "C:\\Program Files\\OpenSSL-Win64\\lib"
-        Extra-Lib-Dirs: "C:\\Program Files\\OpenSSL-Win64\\bin"
+    -- if flag(tsfactory-openssl) && arch(i386)
+    --     Include-Dirs:   ${pkgroot}/../openssl-native/x86/include
+    --     Extra-Lib-Dirs: ${pkgroot}/../openssl-native/x86/lib
+    -- if flag(tsfactory-openssl) && arch(x86_64)
+    --     Include-Dirs:   ${pkgroot}/../openssl-native/x64/include
+    --     Extra-Lib-Dirs: ${pkgroot}/../openssl-native/x64/lib
+    --     Extra-Lib-Dirs: ${pkgroot}/../openssl-native/x64/bin
 
     if os(mingw32)
         if arch(x86_64)
-            Extra-Libraries: libcrypto libssl
+            Extra-Libraries: libeay32 ssleay32
 
         if arch(i386)
-            Extra-Libraries: libcrypto libssl
+            Extra-Libraries: libeay32 ssleay32
 
         C-Sources:       cbits/mutex-win.c
         CC-Options:      -D MINGW32 -DNOCRYPT
-        CPP-Options:     -DCALLCONV=ccall
+        CPP-Options:     -DCALLCONV=stdcall
     else
         Extra-Libraries: ssl crypto
         C-Sources:       cbits/mutex-pthread.c
