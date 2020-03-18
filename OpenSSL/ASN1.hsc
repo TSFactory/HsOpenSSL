@@ -119,6 +119,9 @@ foreign import ccall unsafe "HsOpenSSL_M_ASN1_TIME_free"
 foreign import ccall unsafe "ASN1_TIME_set"
         _ASN1_TIME_set :: Ptr ASN1_TIME -> CTime -> IO (Ptr ASN1_TIME)
 
+foreign import ccall unsafe "ASN1_TIME_set_string"
+        _ASN1_TIME_set_string :: Ptr ASN1_TIME -> CString -> IO (Ptr ASN1_TIME)
+
 foreign import ccall unsafe "ASN1_TIME_print"
         _ASN1_TIME_print :: Ptr BIO_ -> Ptr ASN1_TIME -> IO CInt
 
@@ -130,7 +133,7 @@ peekASN1Time time
              _ASN1_TIME_print bioPtr time
                   >>= failIf_ (/= 1)
          timeStr <- bioRead bio
-#if MIN_VERSION_time(1,5,0)	       
+#if MIN_VERSION_time(1,5,0)
          case parseTimeM True defaultTimeLocale "%b %e %H:%M:%S %Y %Z" timeStr of
 #else
          case parseTime defaultTimeLocale "%b %e %H:%M:%S %Y %Z" timeStr of
@@ -143,9 +146,18 @@ allocaASN1Time
     = bracket _ASN1_TIME_new _ASN1_TIME_free
 
 
+-- withASN1Time :: UTCTime -> (Ptr ASN1_TIME -> IO a) -> IO a
+-- withASN1Time utc m
+--     = allocaASN1Time $ \ time ->
+--       do _ASN1_TIME_set time (fromIntegral (round $ utcTimeToPOSIXSeconds utc :: Integer))
+--               >>= failIfNull_
+--          m time
+
 withASN1Time :: UTCTime -> (Ptr ASN1_TIME -> IO a) -> IO a
-withASN1Time utc m
-    = allocaASN1Time $ \ time ->
-      do _ASN1_TIME_set time (fromIntegral (round $ utcTimeToPOSIXSeconds utc :: Integer))
-              >>= failIfNull_
+withASN1Time utc m =
+  let asn1Utc = formatTime defaultTimeLocale "%0Y%m%d%H%M%SZ" utc -- YYYYMMDDHHMMSSZ
+  in  allocaASN1Time $ \time ->
+      withCString asn1Utc $ \serializedTime ->
+      do _ASN1_TIME_set_string time serializedTime
+            >>= failIfNull_
          m time
