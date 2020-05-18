@@ -171,6 +171,23 @@ X509_CRL* HsOpenSSL_X509_STORE_CTX_get0_current_crl(X509_STORE_CTX *ctx) {
 #endif
 }
 
+int HsOpenSSL_X509V3_EXT_conf(X509* x509, int nid, char* val) {
+  X509_EXTENSION *ex;
+  X509V3_CTX ctx;
+
+  X509V3_set_ctx_nodb(&ctx);
+  X509V3_set_ctx(&ctx, x509, x509, NULL, NULL, 0);
+
+  ex = X509V3_EXT_conf_nid(NULL, &ctx, nid, val);
+  if (!ex) {
+    return 0;
+  }
+
+  X509_add_ext(x509, ex, -1);
+  X509_EXTENSION_free(ex);
+  return 1;
+}
+
 /* PKCS#7 *********************************************************************/
 long HsOpenSSL_PKCS7_is_detached(PKCS7* pkcs7) {
     return PKCS7_is_detached(pkcs7);

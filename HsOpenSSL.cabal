@@ -152,6 +152,7 @@ Library
         OpenSSL.DSA
         OpenSSL.RSA
         OpenSSL.X509
+        OpenSSL.X509.Extensions
         OpenSSL.X509.Revocation
         OpenSSL.X509.Request
         OpenSSL.X509.Store
