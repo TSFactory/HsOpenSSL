@@ -73,8 +73,9 @@ flag old-locale
   default:     False
 
 Custom-setup
-    setup-depends: Cabal >= 1.12,
-                   base  >= 4.4 && < 5
+    setup-depends: Cabal >= 1.12
+                 , base  >= 4.4 && < 5
+                 , directory
 
 Library
     Build-Depends:
@@ -108,13 +109,14 @@ Library
         Include-Dirs: /opt/local/include
         Extra-Lib-Dirs: /opt/local/lib
 
-    -- if flag(tsfactory-openssl) && arch(i386)
-    --     Include-Dirs:   ${pkgroot}/../openssl-native/x86/include
-    --     Extra-Lib-Dirs: ${pkgroot}/../openssl-native/x86/lib
-    -- if flag(tsfactory-openssl) && arch(x86_64)
-    --     Include-Dirs:   ${pkgroot}/../openssl-native/x64/include
-    --     Extra-Lib-Dirs: ${pkgroot}/../openssl-native/x64/lib
-    --     Extra-Lib-Dirs: ${pkgroot}/../openssl-native/x64/bin
+    if os(windows) && arch(i386)
+      Include-Dirs: #CWD#/../openssl-native/x86/include
+      Extra-Lib-Dirs: #CWD#/../openssl-native/x86/lib
+      Extra-Lib-Dirs: #CWD#/../openssl-native/x86/bin
+    if os(windows) && arch(x86_64)
+      Include-Dirs: #CWD#/../openssl-native/x64/include
+      Extra-Lib-Dirs: #CWD#/../openssl-native/x64/lib
+      Extra-Lib-Dirs: #CWD#/../openssl-native/x64/bin
 
     if os(mingw32)
         if arch(x86_64)

@@ -24,12 +24,16 @@ import Distribution.PackageDescription (mkFlagAssignment, unFlagAssignment)
 import Distribution.PackageDescription (FlagAssignment)
 #endif
 
+import qualified Distribution.PackageDescription as PD
+
 import Distribution.Verbosity (silent)
 import System.Info (os)
 import qualified Control.Exception as E (tryJust, throw)
 import System.IO.Error (isUserError)
 import Control.Monad (forM)
 import Data.List
+import Data.Maybe (fromJust)
+import System.Directory (getCurrentDirectory)
 
 #if !(MIN_VERSION_Cabal(2,0,0))
 mkFlagName = FlagName
@@ -43,6 +47,10 @@ unFlagAssignment :: FlagAssignment -> [(FlagName, Bool)]
 unFlagAssignment = id
 #endif
 
+-- On windows we distribute openssl dlls in the monorepo with this, so we need
+-- to tell cabal where to find those as they are at the relative path. Do this
+-- by expanding a special '#CWD#' wildcard
+--
 -- On macOS we're checking whether OpenSSL library is avaiable
 -- and if not, we're trying to find Homebrew or MacPorts OpenSSL installations.
 --
@@ -54,13 +62,38 @@ unFlagAssignment = id
 
 main
     | os == "darwin" =
-        defaultMainWithHooks simpleUserHooks { confHook = conf }
+        defaultMainWithHooks simpleUserHooks { confHook = macConf }
+    | os == "mingw32" = -- windows
+        defaultMainWithHooks simpleUserHooks { confHook = windowsConf }
     | otherwise =
         defaultMain
 
+windowsConf details flags = do
+    localBuildInfo <- confHook simpleUserHooks details flags
+    let packageDescription = localPkgDescr localBuildInfo
+    let library = fromJust $ PD.library packageDescription
+    let libraryBuildInfo = PD.libBuildInfo library
+    cwd <- getCurrentDirectory
+    let includeDirs = PD.includeDirs libraryBuildInfo
+    let extraLibDirs = PD.extraLibDirs libraryBuildInfo
+    pure localBuildInfo {
+        localPkgDescr = packageDescription {
+            PD.library = Just library {
+                PD.libBuildInfo = libraryBuildInfo {
+                    PD.includeDirs = map (expandCwd cwd) includeDirs
+                ,   PD.extraLibDirs = map (expandCwd cwd) extraLibDirs
+                }
+            }
+        }
+    }
+  where
+    expandCwd :: String -> String -> String
+    expandCwd cwdVal ('#':'C':'W':'D':'#':rest) = cwdVal ++ rest
+    expandCwd _      str                        = str
+
 flags = ["homebrew-openssl", "macports-openssl"]
 
-conf descr cfg = do
+macConf descr cfg = do
     c <- tryConfig descr cfg
     case c of
         Right lbi -> return lbi -- library was found
